@@ -1,332 +1,174 @@
-import React, { useState, useMemo } from 'react';
-import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
-import { Plus, ChevronLeft, ChevronRight } from 'lucide-react';
-
-const STYLES = `
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600;700&family=Libre+Franklin:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
-
-.rd-root { font-family: 'Libre Franklin', sans-serif; background: #F0F1EC; color: #1C2430; }
-.rd-display { font-family: 'Fraunces', serif; }
-.rd-mono { font-family: 'IBM Plex Mono', monospace; font-variant-numeric: tabular-nums; }
-.rd-muted { color: #5B6472; }
-.rd-line { border: 1px solid #E4E1D8; }
-.rd-card { background: #FFFFFF; }
-.rd-sidebar { background: #1C2430; }
-.rd-hairline { border-bottom: 1px solid #1C2430; }
-.rd-btn-primary { background: #1C2430; color: #F0F1EC; }
-.rd-btn-primary:hover { background: #2A3547; }
-.rd-nav-item { transition: background 0.15s ease; }
-.rd-nav-item:hover { background: rgba(255,255,255,0.06); }
-`;
-
-const PLATEFORMES = {
-  youtube: { code: 'YT', label: 'YouTube', couleur: '#E14434' },
-  instagram: { code: 'IG', label: 'Instagram', couleur: '#C43D6B' },
-  tiktok: { code: 'TT', label: 'TikTok', couleur: '#1E8F86' },
-  newsletter: { code: 'NL', label: 'Newsletter', couleur: '#A66A0E' },
-};
-
-const STATS = [
-  { label: 'Vues totales', value: '128 400', delta: '+12,4 %', trend: 'up' },
-  { label: "Taux d'engagement", value: '6,8 %', delta: '+0,9 pt', trend: 'up' },
-  { label: 'Nouveaux abonnés', value: '2 340', delta: '+18 %', trend: 'up' },
-  { label: 'Contenus publiés', value: '24 / 28', delta: "86 % de l'objectif", trend: 'neutral' },
-];
-
-const VIEWS_TREND = [
-  { jour: '26 juil', vues: 3200 },
-  { jour: '27 juil', vues: 3450 },
-  { jour: '28 juil', vues: 3100 },
-  { jour: '29 juil', vues: 3800 },
-  { jour: '30 juil', vues: 4200 },
-  { jour: '31 juil', vues: 3950 },
-  { jour: '1 août', vues: 4600 },
-  { jour: '2 août', vues: 4300 },
-  { jour: '3 août', vues: 5100 },
-  { jour: '4 août', vues: 4800 },
-  { jour: '5 août', vues: 5400 },
-  { jour: '6 août', vues: 5950 },
-  { jour: '7 août', vues: 5700 },
-  { jour: '8 août', vues: 6300 },
-];
-
-const PLATFORM_BREAKDOWN = [
-  { key: 'youtube', pct: 42 },
-  { key: 'instagram', pct: 31 },
-  { key: 'tiktok', pct: 18 },
-  { key: 'newsletter', pct: 9 },
-];
-
-const POSTS_BY_DATE = {
-  '2026-8-5': [{ platform: 'instagram', title: 'Carrousel : 5 astuces SEO' }],
-  '2026-8-8': [{ platform: 'youtube', title: 'Tuto complet Notion' }],
-  '2026-8-10': [{ platform: 'newsletter', title: 'Newsletter #24' }],
-  '2026-8-12': [{ platform: 'tiktok', title: 'Behind the scenes' }],
-  '2026-8-14': [{ platform: 'instagram', title: 'Reel : routine matinale' }],
-  '2026-8-15': [
-    { platform: 'youtube', title: 'Live Q&R communauté' },
-    { platform: 'newsletter', title: 'Récap mensuel' },
-  ],
-  '2026-8-18': [{ platform: 'tiktok', title: 'Duo tendance' }],
-  '2026-8-20': [{ platform: 'instagram', title: 'Résultats du mois' }],
-  '2026-8-22': [{ platform: 'youtube', title: 'Vlog coulisses' }],
-  '2026-8-25': [{ platform: 'newsletter', title: 'Newsletter #25' }],
-  '2026-8-28': [{ platform: 'tiktok', title: 'Astuce rapide' }],
-  '2026-8-29': [{ platform: 'instagram', title: 'Bilan du mois' }],
-};
-
-const UPCOMING = [
-  { platform: 'newsletter', title: 'Newsletter #24 — bilan de juillet', date: '10 août' },
-  { platform: 'tiktok', title: 'Behind the scenes du tournage', date: '12 août' },
-  { platform: 'instagram', title: 'Reel : routine matinale', date: '14 août' },
-  { platform: 'youtube', title: 'Live Q&R avec la communauté', date: '15 août' },
-  { platform: 'tiktok', title: 'Duo tendance de la semaine', date: '18 août' },
-];
-
-const NAV_ITEMS = ['Bureau', 'Calendrier', 'Contenus', 'Statistiques', 'Audience', 'Paramètres'];
-const JOURS = ['Di', 'Lu', 'Ma', 'Me', 'Je', 'Ve', 'Sa'];
-const JOURS_LONGS = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
-const MOIS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
-
-function getCalendarCells(date) {
-  const year = date.getFullYear();
-  const month = date.getMonth();
-  const firstWeekday = new Date(year, month, 1).getDay();
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const cells = [];
-  for (let i = 0; i < firstWeekday; i++) cells.push(null);
-  for (let d = 1; d <= daysInMonth; d++) cells.push(d);
-  return cells;
-}
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { supabase } from './supabaseClient';
+import './rundown.css';
 
 export default function RundownDashboard() {
-  const [viewDate, setViewDate] = useState(new Date(2026, 7, 1));
-  const year = viewDate.getFullYear();
-  const month = viewDate.getMonth();
-  const cells = useMemo(() => getCalendarCells(viewDate), [viewDate]);
-  const today = new Date(2026, 7, 8);
-  const todayLabel = `${JOURS_LONGS[today.getDay()]} ${today.getDate()} ${MOIS[today.getMonth()]} ${today.getFullYear()}`;
+  const [user, setUser] = useState(null);
+  const [activeTab, setActiveTab] = useState('bureau'); // État pour gérer la vue active
+  const navigate = useNavigate();
 
-  const goPrev = () => setViewDate(new Date(year, month - 1, 1));
-  const goNext = () => setViewDate(new Date(year, month + 1, 1));
+  useEffect(() => {
+    // Récupérer les infos de l'utilisateur connecté depuis Supabase
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) {
+        setUser(user);
+      }
+    });
+  }, []);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate('/login');
+  };
+
+  // Contenu dynamique selon l'onglet cliqué
+  const renderContent = () => {
+    switch (activeTab) {
+      case 'bureau':
+        return (
+          <div>
+            <div className="flex justify-between items-center mb-6">
+              <div>
+                <span className="rd-mono text-xs uppercase" style={{ color: '#5B6472' }}>Édition du Mardi 11 Août 2026</span>
+                <h1 className="rd-display text-2xl font-semibold mt-1" style={{ color: '#1C2430' }}>
+                  Bienvenue, {user?.user_metadata?.name || user?.email || 'Créateur'}
+                </h1>
+              </div>
+              <button 
+                onClick={() => alert("Fonctionnalité '+ Nouveau contenu' à venir !")}
+                className="text-sm font-medium px-4 py-2 rounded flex items-center gap-2"
+                style={{ background: '#1C2430', color: '#F0F1EC' }}
+              >
+                + Nouveau contenu
+              </button>
+            </div>
+
+            {/* Statistiques rapides */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+              <div className="rd-line rounded p-4 bg-white">
+                <span className="rd-mono text-xs" style={{ color: '#5B6472' }}>VUES TOTALES</span>
+                <div className="text-2xl font-bold mt-2" style={{ color: '#1C2430' }}>128 400</div>
+                <span className="text-xs text-green-600 mt-1 block">▲ +12,4 %</span>
+              </div>
+              <div className="rd-line rounded p-4 bg-white">
+                <span className="rd-mono text-xs" style={{ color: '#5B6472' }}>TAUX D'ENGAGEMENT</span>
+                <div className="text-2xl font-bold mt-2" style={{ color: '#1C2430' }}>6,8 %</div>
+                <span className="text-xs text-green-600 mt-1 block">▲ +0,9 pt</span>
+              </div>
+              <div className="rd-line rounded p-4 bg-white">
+                <span className="rd-mono text-xs" style={{ color: '#5B6472' }}>NOUVEAUX ABONNÉS</span>
+                <div className="text-2xl font-bold mt-2" style={{ color: '#1C2430' }}>2 340</div>
+                <span className="text-xs text-green-600 mt-1 block">▲ +18 %</span>
+              </div>
+              <div className="rd-line rounded p-4 bg-white">
+                <span className="rd-mono text-xs" style={{ color: '#5B6472' }}>CONTENUS PUBLIÉS</span>
+                <div className="text-2xl font-bold mt-2" style={{ color: '#1C2430' }}>24 / 28</div>
+                <span className="text-xs mt-1 block" style={{ color: '#5B6472' }}>86 % de l'objectif</span>
+              </div>
+            </div>
+          </div>
+        );
+
+      case 'calendrier':
+        return (
+          <div>
+            <h1 className="rd-display text-2xl font-semibold mb-4" style={{ color: '#1C2430' }}>Calendrier éditorial</h1>
+            <p className="text-sm" style={{ color: '#5B6472' }}>Gérez ici la programmation visuelle de vos publications multi-plateformes.</p>
+            {/* Espace calendrier interactif à structurer */}
+            <div className="mt-6 p-8 bg-white rd-line rounded text-center text-sm" style={{ color: '#5B6472' }}>
+              Le module calendrier interactif sera branché ici.
+            </div>
+          </div>
+        );
+
+      case 'contenus':
+        return (
+          <div>
+            <h1 className="rd-display text-2xl font-semibold mb-4" style={{ color: '#1C2430' }}>Mes Contenus</h1>
+            <p className="text-sm" style={{ color: '#5B6472' }}>Liste de tous vos brouillons, publications programmées et archives.</p>
+            <div className="mt-6 p-8 bg-white rd-line rounded text-center text-sm" style={{ color: '#5B6472' }}>
+              Aucun contenu répertorié pour le moment.
+            </div>
+          </div>
+        );
+
+      case 'statistiques':
+        return (
+          <div>
+            <h1 className="rd-display text-2xl font-semibold mb-4" style={{ color: '#1C2430' }}>Statistiques Globales</h1>
+            <p className="text-sm" style={{ color: '#5B6472' }}>Analysez la croissance de votre audience en détail.</p>
+            <div className="mt-6 p-8 bg-white rd-line rounded text-center text-sm" style={{ color: '#5B6472' }}>
+              Graphiques d'analytique avancés en cours de conception.
+            </div>
+          </div>
+        );
+
+      case 'parametres':
+        return (
+          <div>
+            <h1 className="rd-display text-2xl font-semibold mb-4" style={{ color: '#1C2430' }}>Paramètres du compte</h1>
+            <p className="text-sm mb-4" style={{ color: '#5B6472' }}>Gérez vos informations de profil et vos préférences de connexion.</p>
+            <div className="p-4 bg-white rd-line rounded max-w-md">
+              <p className="text-xs font-medium mb-1" style={{ color: '#5B6472' }}>E-mail connecté :</p>
+              <p className="text-sm font-bold mb-4" style={{ color: '#1C2430' }}>{user?.email}</p>
+              <button 
+                onClick={handleLogout}
+                className="text-xs font-medium px-3 py-2 rounded rd-line bg-red-50 text-red-600 hover:bg-red-100"
+              >
+                Se déconnecter
+              </button>
+            </div>
+          </div>
+        );
+
+      default:
+        return null;
+    }
+  };
 
   return (
-    <div className="rd-root min-h-screen flex">
-      <style>{STYLES}</style>
-
-      <aside className="rd-sidebar w-56 shrink-0 hidden md:flex flex-col text-white">
-        <div className="px-6 py-7">
-          <span className="rd-display text-2xl font-semibold tracking-tight">Rundown</span>
-          <p className="text-xs mt-1" style={{ color: '#8891A0' }}>Studio de production de contenu</p>
-        </div>
-        <nav className="flex-1 px-4 mt-3 space-y-0.5">
-          {NAV_ITEMS.map((item, i) => (
-            <button
-              key={item}
-              className="rd-nav-item w-full text-left px-3 py-2 text-sm rounded"
-              style={
-                i === 0
-                  ? { background: 'rgba(255,255,255,0.08)', fontWeight: 600, borderLeft: '2px solid #F0F1EC' }
-                  : { color: '#9AA2AF', borderLeft: '2px solid transparent' }
-              }
-            >
-              {item}
-            </button>
-          ))}
-        </nav>
-        <div className="mx-4 mb-6 p-4 rounded" style={{ background: 'rgba(255,255,255,0.06)' }}>
-          <p className="text-xs mb-2" style={{ color: '#8891A0' }}>Objectif du mois</p>
-          <p className="rd-mono text-lg mb-2">
-            24 <span style={{ color: '#8891A0' }}>/ 28</span>
-          </p>
-          <div className="w-full h-1 rounded-full" style={{ background: 'rgba(255,255,255,0.15)' }}>
-            <div className="h-1 rounded-full" style={{ width: '86%', background: '#F0F1EC' }} />
+    <div className="min-h-screen flex" style={{ background: '#F0F1EC' }}>
+      {/* Barre latérale (Sidebar) */}
+      <aside className="w-64 flex flex-col justify-between p-6" style={{ background: '#1C2430', color: '#F0F1EC' }}>
+        <div>
+          <div className="mb-8">
+            <span className="rd-display text-xl font-semibold">Rundown</span>
+            <p className="text-xs mt-1" style={{ color: '#A0AEC0' }}>Studio de production de contenu</p>
           </div>
+
+          <nav className="flex flex-col gap-2">
+            {[
+              { id: 'bureau', label: 'Bureau' },
+              { id: 'calendrier', label: 'Calendrier' },
+              { id: 'contenus', label: 'Contenus' },
+              { id: 'statistiques', label: 'Statistiques' },
+              { id: 'parametres', label: 'Paramètres' },
+            ].map((item) => (
+              <button
+                key={item.id}
+                onClick={() => setActiveTab(item.id)}
+                className="text-left px-3 py-2 rounded text-sm transition-colors"
+                style={{
+                  background: activeTab === item.id ? 'rgba(255, 255, 255, 0.1)' : 'transparent',
+                  color: activeTab === item.id ? '#F0F1EC' : '#A0AEC0',
+                }}
+              >
+                {item.label}
+              </button>
+            ))}
+          </nav>
+        </div>
+
+        <div className="text-xs pt-4 border-t border-gray-700" style={{ color: '#A0AEC0' }}>
+          Connecté en tant que <br />
+          <span className="font-medium text-white truncate block">{user?.user_metadata?.name || user?.email}</span>
         </div>
       </aside>
 
-      <main className="flex-1 min-w-0">
-        <div className="rd-hairline px-5 md:px-10 pt-8 pb-5">
-          <div className="flex items-start justify-between gap-4 flex-wrap">
-            <div>
-              <p className="rd-mono text-xs rd-muted uppercase tracking-wider mb-2">Édition du {todayLabel}</p>
-              <h1 className="rd-display text-3xl font-semibold">Votre semaine en un coup d'œil</h1>
-            </div>
-            <button className="rd-btn-primary flex items-center gap-2 text-sm px-4 py-2.5 rounded">
-              <Plus size={16} />
-              Nouveau contenu
-            </button>
-          </div>
-        </div>
-
-        <div className="px-5 md:px-10 py-6 space-y-6">
-          <section className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            {STATS.map((s) => (
-              <div key={s.label} className="rd-card rd-line rounded-lg p-4">
-                <p className="text-xs rd-muted uppercase tracking-wide mb-2">{s.label}</p>
-                <div className="flex items-baseline justify-between gap-2 flex-wrap">
-                  <span className="rd-mono text-2xl font-semibold">{s.value}</span>
-                  <span
-                    className="rd-mono text-xs"
-                    style={{ color: s.trend === 'up' ? '#3F7D5C' : s.trend === 'down' ? '#B5452F' : '#5B6472' }}
-                  >
-                    {s.trend === 'up' && '▲ '}
-                    {s.trend === 'down' && '▼ '}
-                    {s.delta}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </section>
-
-          <section className="grid grid-cols-1 xl:grid-cols-3 gap-5">
-            <div className="xl:col-span-2 rd-card rd-line rounded-lg p-5">
-              <div className="flex items-center justify-between flex-wrap gap-3 mb-4">
-                <h2 className="rd-display text-xl font-semibold">Calendrier de publication</h2>
-                <div className="flex items-center gap-3">
-                  <span className="rd-mono text-sm capitalize">{MOIS[month]} {year}</span>
-                  <div className="flex items-center gap-1">
-                    <button onClick={goPrev} className="rd-line p-1.5 rounded hover:bg-stone-50">
-                      <ChevronLeft size={15} />
-                    </button>
-                    <button onClick={goNext} className="rd-line p-1.5 rounded hover:bg-stone-50">
-                      <ChevronRight size={15} />
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex flex-wrap gap-3 mb-4">
-                {Object.values(PLATEFORMES).map((p) => (
-                  <span key={p.code} className="flex items-center gap-1.5 text-xs rd-muted">
-                    <span className="rd-mono text-white px-1 rounded" style={{ background: p.couleur, fontSize: '10px' }}>
-                      {p.code}
-                    </span>
-                    {p.label}
-                  </span>
-                ))}
-              </div>
-
-              <div className="grid grid-cols-7 mb-1">
-                {JOURS.map((j, i) => (
-                  <div key={i} className="rd-mono text-center text-xs rd-muted py-1">{j}</div>
-                ))}
-              </div>
-
-              <div className="grid grid-cols-7 gap-1.5">
-                {cells.map((d, idx) => {
-                  if (d === null) return <div key={idx} />;
-                  const key = `${year}-${month + 1}-${d}`;
-                  const posts = POSTS_BY_DATE[key] || [];
-                  const isToday = year === 2026 && month === 7 && d === 8;
-                  return (
-                    <div
-                      key={idx}
-                      className="rd-line rounded-md p-1.5 flex flex-col justify-between"
-                      style={{
-                        minHeight: '62px',
-                        background: isToday ? '#FBF9F4' : '#FFFFFF',
-                        borderColor: isToday ? '#1C2430' : '#E4E1D8',
-                        borderWidth: isToday ? '1.5px' : '1px',
-                      }}
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="rd-mono text-xs">{d}</span>
-                        {isToday && <span className="w-1.5 h-1.5 rounded-full" style={{ background: '#1C2430' }} />}
-                      </div>
-                      <div className="flex flex-wrap gap-0.5">
-                        {posts.slice(0, 3).map((post, i) => (
-                          <span
-                            key={i}
-                            title={post.title}
-                            className="rd-mono text-white px-1 rounded leading-tight"
-                            style={{ background: PLATEFORMES[post.platform].couleur, fontSize: '10px' }}
-                          >
-                            {PLATEFORMES[post.platform].code}
-                          </span>
-                        ))}
-                        {posts.length > 3 && (
-                          <span className="rd-mono rd-muted" style={{ fontSize: '10px' }}>
-                            +{posts.length - 3}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div className="rd-card rd-line rounded-lg p-5 flex flex-col gap-6">
-              <div>
-                <h2 className="rd-display text-xl font-semibold mb-1">Statistiques globales</h2>
-                <p className="rd-mono text-xs rd-muted mb-3 uppercase tracking-wide">Vues, 14 derniers jours</p>
-                <div style={{ height: 130 }}>
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={VIEWS_TREND}>
-                      <defs>
-                        <linearGradient id="colorVues" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#1C2430" stopOpacity={0.25} />
-                          <stop offset="95%" stopColor="#1C2430" stopOpacity={0} />
-                        </linearGradient>
-                      </defs>
-                      <XAxis dataKey="jour" tick={{ fontSize: 9 }} axisLine={false} tickLine={false} interval={2} />
-                      <YAxis hide />
-                      <Tooltip contentStyle={{ fontSize: 11, borderRadius: 6 }} />
-                      <Area type="monotone" dataKey="vues" stroke="#1C2430" strokeWidth={1.75} fill="url(#colorVues)" />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-
-              <div>
-                <p className="rd-mono text-xs rd-muted mb-3 uppercase tracking-wide">Répartition par plateforme</p>
-                <div className="space-y-2.5">
-                  {PLATFORM_BREAKDOWN.map((pb) => {
-                    const p = PLATEFORMES[pb.key];
-                    return (
-                      <div key={pb.key}>
-                        <div className="flex items-center justify-between text-xs mb-1">
-                          <span className="flex items-center gap-1.5">
-                            <span className="rd-mono text-white px-1 rounded" style={{ background: p.couleur, fontSize: '10px' }}>
-                              {p.code}
-                            </span>
-                            {p.label}
-                          </span>
-                          <span className="rd-mono">{pb.pct}%</span>
-                        </div>
-                        <div className="w-full h-1.5 rounded-full" style={{ background: '#EDEBE3' }}>
-                          <div className="h-1.5 rounded-full" style={{ width: `${pb.pct}%`, background: p.couleur }} />
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-          </section>
-
-          <section className="rd-card rd-line rounded-lg p-5">
-            <h2 className="rd-display text-xl font-semibold mb-4">Prochaines publications</h2>
-            <div className="divide-y divide-stone-200">
-              {UPCOMING.map((u, i) => {
-                const p = PLATEFORMES[u.platform];
-                return (
-                  <div key={i} className="flex items-center gap-3 py-3">
-                    <span className="rd-mono text-white px-1.5 py-0.5 rounded shrink-0 text-xs" style={{ background: p.couleur }}>
-                      {p.code}
-                    </span>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm truncate">{u.title}</p>
-                      <p className="text-xs rd-muted">{p.label}</p>
-                    </div>
-                    <span className="rd-mono text-xs rd-muted uppercase whitespace-nowrap">{u.date}</span>
-                  </div>
-                );
-              })}
-            </div>
-          </section>
-        </div>
+      {/* Zone de contenu principale */}
+      <main className="flex-1 p-8 overflow-y-auto">
+        {renderContent()}
       </main>
     </div>
   );

@@ -1,0 +1,16 @@
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600;700&family=Libre+Franklin:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+.rd-root { font-family: 'Libre Franklin', sans-serif; background: #F0F1EC; color: #1C2430; }
+.rd-display { font-family: 'Fraunces', serif; }
+.rd-mono { font-family: 'IBM Plex Mono', monospace; font-variant-numeric: tabular-nums; }
+.rd-muted { color: #5B6472; }
+.rd-line { border: 1px solid #E4E1D8; }
+.rd-input { outline: none; transition: border-color 0.15s ease; }
+.rd-input:focus { border-color: #1C2430; }
+.rd-card { background: #FFFFFF; }
+.rd-sidebar { background: #1C2430; }
+.rd-hairline { border-bottom: 1px solid #1C2430; }
+.rd-btn-primary { background: #1C2430; color: #F0F1EC; }
+.rd-btn-primary:hover { background: #2A3547; }
+.rd-nav-item { transition: background 0.15s ease; }
+.rd-nav-item:hover { background: rgba(255,255,255,0.06); }

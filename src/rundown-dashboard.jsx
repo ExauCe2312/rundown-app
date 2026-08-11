@@ -5,15 +5,13 @@ import './rundown.css';
 
 export default function RundownDashboard() {
   const [user, setUser] = useState(null);
-  const [activeTab, setActiveTab] = useState('bureau'); // État pour gérer la vue active
+  const [activeTab, setActiveTab] = useState('bureau');
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false); // État pour ouvrir/fermer le menu sur mobile
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Récupérer les infos de l'utilisateur connecté depuis Supabase
     supabase.auth.getUser().then(({ data: { user } }) => {
-      if (user) {
-        setUser(user);
-      }
+      if (user) setUser(user);
     });
   }, []);
 
@@ -22,13 +20,12 @@ export default function RundownDashboard() {
     navigate('/login');
   };
 
-  // Contenu dynamique selon l'onglet cliqué
   const renderContent = () => {
     switch (activeTab) {
       case 'bureau':
         return (
           <div>
-            <div className="flex justify-between items-center mb-6">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
               <div>
                 <span className="rd-mono text-xs uppercase" style={{ color: '#5B6472' }}>Édition du Mardi 11 Août 2026</span>
                 <h1 className="rd-display text-2xl font-semibold mt-1" style={{ color: '#1C2430' }}>
@@ -37,7 +34,7 @@ export default function RundownDashboard() {
               </div>
               <button 
                 onClick={() => alert("Fonctionnalité '+ Nouveau contenu' à venir !")}
-                className="text-sm font-medium px-4 py-2 rounded flex items-center gap-2"
+                className="text-sm font-medium px-4 py-2 rounded flex items-center gap-2 w-full sm:w-auto justify-center"
                 style={{ background: '#1C2430', color: '#F0F1EC' }}
               >
                 + Nouveau contenu
@@ -45,7 +42,7 @@ export default function RundownDashboard() {
             </div>
 
             {/* Statistiques rapides */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
               <div className="rd-line rounded p-4 bg-white">
                 <span className="rd-mono text-xs" style={{ color: '#5B6472' }}>VUES TOTALES</span>
                 <div className="text-2xl font-bold mt-2" style={{ color: '#1C2430' }}>128 400</div>
@@ -67,6 +64,25 @@ export default function RundownDashboard() {
                 <span className="text-xs mt-1 block" style={{ color: '#5B6472' }}>86 % de l'objectif</span>
               </div>
             </div>
+
+            {/* Section Calendrier et Stats Globales d'origine réintégrées */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2 bg-white p-6 rd-line rounded">
+                <h3 className="rd-display text-lg font-semibold mb-2" style={{ color: '#1C2430' }}>Calendrier de publication</h3>
+                <p className="text-xs mb-4" style={{ color: '#5B6472' }}>Aperçu de vos prochaines diffusions planifiées.</p>
+                <div className="p-8 border border-dashed rounded text-center text-xs" style={{ color: '#5B6472' }}>
+                  Module calendrier interactif en cours d'intégration.
+                </div>
+              </div>
+
+              <div className="bg-white p-6 rd-line rounded">
+                <h3 className="rd-display text-lg font-semibold mb-2" style={{ color: '#1C2430' }}>Statistiques globales</h3>
+                <p className="text-xs mb-4" style={{ color: '#5B6472' }}>Vues, 14 derniers jours.</p>
+                <div className="h-32 flex items-center justify-center border border-dashed rounded text-xs" style={{ color: '#5B6472' }}>
+                  Graphique d'activité
+                </div>
+              </div>
+            </div>
           </div>
         );
 
@@ -75,9 +91,8 @@ export default function RundownDashboard() {
           <div>
             <h1 className="rd-display text-2xl font-semibold mb-4" style={{ color: '#1C2430' }}>Calendrier éditorial</h1>
             <p className="text-sm" style={{ color: '#5B6472' }}>Gérez ici la programmation visuelle de vos publications multi-plateformes.</p>
-            {/* Espace calendrier interactif à structurer */}
             <div className="mt-6 p-8 bg-white rd-line rounded text-center text-sm" style={{ color: '#5B6472' }}>
-              Le module calendrier interactif sera branché ici.
+              Le module calendrier interactif complet sera branché ici.
             </div>
           </div>
         );
@@ -128,11 +143,27 @@ export default function RundownDashboard() {
   };
 
   return (
-    <div className="min-h-screen flex" style={{ background: '#F0F1EC' }}>
-      {/* Barre latérale (Sidebar) */}
-      <aside className="w-64 flex flex-col justify-between p-6" style={{ background: '#1C2430', color: '#F0F1EC' }}>
+    <div className="min-h-screen flex flex-col lg:flex-row" style={{ background: '#F0F1EC' }}>
+      
+      {/* Barre de navigation mobile (Visible uniquement sur petits écrans) */}
+      <div className="lg:hidden flex justify-between items-center p-4 bg-[#1C2430] text-[#F0F1EC]">
+        <span className="rd-display text-lg font-semibold">Rundown</span>
+        <button 
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          className="text-xs px-3 py-1.5 rounded bg-white/10"
+        >
+          {isMobileMenuOpen ? 'Fermer ✕' : 'Menu ☰'}
+        </button>
+      </div>
+
+      {/* Barre latérale (Sidebar) - Adaptative mobile/desktop */}
+      <aside 
+        className={`w-full lg:w-64 flex-shrink-0 flex-col justify-between p-6 bg-[#1C2430] text-[#F0F1EC] ${
+          isMobileMenuOpen ? 'flex' : 'hidden lg:flex'
+        }`}
+      >
         <div>
-          <div className="mb-8">
+          <div className="mb-8 hidden lg:block">
             <span className="rd-display text-xl font-semibold">Rundown</span>
             <p className="text-xs mt-1" style={{ color: '#A0AEC0' }}>Studio de production de contenu</p>
           </div>
@@ -147,7 +178,10 @@ export default function RundownDashboard() {
             ].map((item) => (
               <button
                 key={item.id}
-                onClick={() => setActiveTab(item.id)}
+                onClick={() => {
+                  setActiveTab(item.id);
+                  setIsMobileMenuOpen(false); // Ferme le menu mobile automatiquement au clic
+                }}
                 className="text-left px-3 py-2 rounded text-sm transition-colors"
                 style={{
                   background: activeTab === item.id ? 'rgba(255, 255, 255, 0.1)' : 'transparent',
@@ -160,14 +194,14 @@ export default function RundownDashboard() {
           </nav>
         </div>
 
-        <div className="text-xs pt-4 border-t border-gray-700" style={{ color: '#A0AEC0' }}>
+        <div className="text-xs pt-4 border-t border-gray-700 mt-6 lg:mt-0" style={{ color: '#A0AEC0' }}>
           Connecté en tant que <br />
           <span className="font-medium text-white truncate block">{user?.user_metadata?.name || user?.email}</span>
         </div>
       </aside>
 
       {/* Zone de contenu principale */}
-      <main className="flex-1 p-8 overflow-y-auto">
+      <main className="flex-1 p-4 lg:p-8 overflow-y-auto">
         {renderContent()}
       </main>
     </div>

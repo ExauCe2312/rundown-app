@@ -8,15 +8,30 @@ export default function RundownDashboard() {
   const [activeTab, setActiveTab] = useState('bureau');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
-  // États pour la modale de création de contenu
   const [isModalOpen, setIsModalOpen] = useState(false);
+  
+  // Liste des contenus (initialisée avec un exemple ou vide)
+  const [contents, setContents] = useState([
+    {
+      id: 1,
+      title: 'Refonte de mon setup dev et astuces productivité',
+      platform: 'YouTube',
+      date: '2026-08-15',
+      time: '18:00',
+      mediaUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe',
+      status: 'Planifié'
+    }
+  ]);
+
   const [contentForm, setContentForm] = useState({
     title: '',
     platform: 'YouTube',
     date: '',
+    time: '',
+    mediaUrl: '',
     status: 'Planifié'
   });
-  
+
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -32,10 +47,17 @@ export default function RundownDashboard() {
 
   const handleContentSubmit = (e) => {
     e.preventDefault();
-    // Pour l'instant, on simule l'enregistrement avec une alerte propre et la fermeture de la modale
-    alert(`Contenu "${contentForm.title}" (${contentForm.platform}) planifié avec succès pour le ${contentForm.date || 'bientôt'} !`);
+    const newEntry = {
+      id: Date.now(),
+      ...contentForm
+    };
+    setContents([newEntry, ...contents]);
     setIsModalOpen(false);
-    setContentForm({ title: '', platform: 'YouTube', date: '', status: 'Planifié' });
+    setContentForm({ title: '', platform: 'YouTube', date: '', time: '', mediaUrl: '', status: 'Planifié' });
+  };
+
+  const handleDeleteContent = (id) => {
+    setContents(contents.filter(item => item.id !== id));
   };
 
   const renderContent = () => {
@@ -78,18 +100,31 @@ export default function RundownDashboard() {
               </div>
               <div className="rd-line rounded p-4 bg-white">
                 <span className="rd-mono text-xs" style={{ color: '#5B6472' }}>CONTENUS PUBLIÉS</span>
-                <div className="text-2xl font-bold mt-2" style={{ color: '#1C2430' }}>24 / 28</div>
-                <span className="text-xs mt-1 block" style={{ color: '#5B6472' }}>86 % de l'objectif</span>
+                <div className="text-2xl font-bold mt-2" style={{ color: '#1C2430' }}>{contents.length} / 28</div>
+                <span className="text-xs mt-1 block" style={{ color: '#5B6472' }}>Suivi en direct</span>
               </div>
             </div>
 
+            {/* Aperçu rapide des derniers contenus programmés */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="lg:col-span-2 bg-white p-6 rd-line rounded">
-                <h3 className="rd-display text-lg font-semibold mb-2" style={{ color: '#1C2430' }}>Calendrier de publication</h3>
-                <p className="text-xs mb-4" style={{ color: '#5B6472' }}>Aperçu de vos prochaines diffusions planifiées.</p>
-                <div className="p-8 border border-dashed rounded text-center text-xs" style={{ color: '#5B6472' }}>
-                  Module calendrier interactif en cours d'intégration.
-                </div>
+                <h3 className="rd-display text-lg font-semibold mb-2" style={{ color: '#1C2430' }}>Prochaines publications</h3>
+                <p className="text-xs mb-4" style={{ color: '#5B6472' }}>Aperçu rapide de vos planifications en cours.</p>
+                {contents.length === 0 ? (
+                  <p className="text-xs text-gray-500 py-4 text-center">Aucune publication planifiée.</p>
+                ) : (
+                  <div className="space-y-3">
+                    {contents.slice(0, 3).map((item) => (
+                      <div key={item.id} className="p-3 rd-line rounded flex items-center justify-between text-sm bg-gray-50">
+                        <div>
+                          <span className="font-semibold text-xs px-2 py-0.5 rounded bg-black/5 mr-2">{item.platform}</span>
+                          <span className="font-medium" style={{ color: '#1C2430' }}>{item.title}</span>
+                        </div>
+                        <span className="text-xs text-gray-500">{item.date} à {item.time || '00:00'}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div className="bg-white p-6 rd-line rounded">
@@ -107,9 +142,20 @@ export default function RundownDashboard() {
         return (
           <div>
             <h1 className="rd-display text-2xl font-semibold mb-4" style={{ color: '#1C2430' }}>Calendrier éditorial</h1>
-            <p className="text-sm" style={{ color: '#5B6472' }}>Gérez ici la programmation visuelle de vos publications multi-plateformes.</p>
-            <div className="mt-6 p-8 bg-white rd-line rounded text-center text-sm" style={{ color: '#5B6472' }}>
-              Le module calendrier interactif complet sera branché ici.
+            <p className="text-sm mb-6" style={{ color: '#5B6472' }}>Vue d'ensemble de vos diffusions multi-plateformes programmées.</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {contents.map((item) => (
+                <div key={item.id} className="bg-white p-4 rd-line rounded">
+                  <div className="flex justify-between items-start mb-2">
+                    <span className="text-xs font-bold px-2 py-1 rounded bg-[#1C2430] text-[#F0F1EC]">{item.platform}</span>
+                    <span className="text-xs font-mono text-gray-500">{item.date} — {item.time}</span>
+                  </div>
+                  <h4 className="font-semibold text-sm mb-2" style={{ color: '#1C2430' }}>{item.title}</h4>
+                  {item.mediaUrl && (
+                    <p className="text-xs text-blue-600 truncate mb-2">📎 Média attaché : {item.mediaUrl}</p>
+                  )}
+                </div>
+              ))}
             </div>
           </div>
         );
@@ -117,11 +163,35 @@ export default function RundownDashboard() {
       case 'contenus':
         return (
           <div>
-            <h1 className="rd-display text-2xl font-semibold mb-4" style={{ color: '#1C2430' }}>Mes Contenus</h1>
-            <p className="text-sm" style={{ color: '#5B6472' }}>Liste de tous vos brouillons, publications programmées et archives.</p>
-            <div className="mt-6 p-8 bg-white rd-line rounded text-center text-sm" style={{ color: '#5B6472' }}>
-              Aucun contenu répertorié pour le moment.
-            </div>
+            <h1 className="rd-display text-2xl font-semibold mb-4" style={{ color: '#1C2430' }}>Gestion des Contenus</h1>
+            <p className="text-sm mb-6" style={{ color: '#5B6472' }}>Retrouvez, suivez et supprimez vos publications planifiées.</p>
+            
+            {contents.length === 0 ? (
+              <div className="p-8 bg-white rd-line rounded text-center text-sm" style={{ color: '#5B6472' }}>
+                Aucun contenu enregistré pour le moment. Cliquez sur "+ Nouveau contenu".
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {contents.map((item) => (
+                  <div key={item.id} className="bg-white p-4 rd-line rounded flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-xs font-bold px-2 py-0.5 rounded bg-gray-200" style={{ color: '#1C2430' }}>{item.platform}</span>
+                        <span className="text-xs text-gray-500">📅 {item.date} à {item.time || '00:00'}</span>
+                      </div>
+                      <h4 className="font-medium text-base" style={{ color: '#1C2430' }}>{item.title}</h4>
+                      {item.mediaUrl && <p className="text-xs text-gray-500 mt-1">Média : {item.mediaUrl}</p>}
+                    </div>
+                    <button
+                      onClick={() => handleDeleteContent(item.id)}
+                      className="text-xs px-3 py-1.5 rounded bg-red-50 text-red-600 hover:bg-red-100 font-medium"
+                    >
+                      Supprimer
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         );
 
@@ -222,7 +292,7 @@ export default function RundownDashboard() {
         {renderContent()}
       </main>
 
-      {/* Fenêtre Modale "Nouveau contenu" */}
+      {/* Fenêtre Modale "Nouveau contenu" enrichie */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-md shadow-xl rd-line">
@@ -239,14 +309,14 @@ export default function RundownDashboard() {
 
             <form onSubmit={handleContentSubmit}>
               <div className="mb-4">
-                <label className="text-xs font-medium block mb-1.5" style={{ color: '#1C2430' }}>Titre ou sujet de la publication</label>
+                <label className="text-xs font-medium block mb-1.5" style={{ color: '#1C2430' }}>Titre ou légende de la publication</label>
                 <input
                   type="text"
                   required
                   value={contentForm.title}
                   onChange={(e) => setContentForm({ ...contentForm, title: e.target.value })}
                   className="rd-input w-full rd-line rounded px-3 py-2 text-sm"
-                  placeholder="Ex: Refonte de mon setup dev..."
+                  placeholder="Ex: Mon nouveau tutoriel complet..."
                 />
               </div>
 
@@ -260,18 +330,45 @@ export default function RundownDashboard() {
                   <option value="YouTube">YouTube</option>
                   <option value="Instagram">Instagram</option>
                   <option value="TikTok">TikTok</option>
+                  <option value="LinkedIn">LinkedIn</option>
+                  <option value="Facebook">Facebook</option>
+                  <option value="X / Twitter">X / Twitter</option>
+                  <option value="Threads">Threads</option>
                   <option value="Newsletter">Newsletter</option>
                 </select>
               </div>
 
+              <div className="grid grid-cols-2 gap-3 mb-4">
+                <div>
+                  <label className="text-xs font-medium block mb-1.5" style={{ color: '#1C2430' }}>Date</label>
+                  <input
+                    type="date"
+                    required
+                    value={contentForm.date}
+                    onChange={(e) => setContentForm({ ...contentForm, date: e.target.value })}
+                    className="rd-input w-full rd-line rounded px-3 py-2 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-medium block mb-1.5" style={{ color: '#1C2430' }}>Heure précise</label>
+                  <input
+                    type="time"
+                    required
+                    value={contentForm.time}
+                    onChange={(e) => setContentForm({ ...contentForm, time: e.target.value })}
+                    className="rd-input w-full rd-line rounded px-3 py-2 text-sm"
+                  />
+                </div>
+              </div>
+
               <div className="mb-6">
-                <label className="text-xs font-medium block mb-1.5" style={{ color: '#1C2430' }}>Date de publication prévue</label>
+                <label className="text-xs font-medium block mb-1.5" style={{ color: '#1C2430' }}>Lien du média ou de la vidéo (Optionnel)</label>
                 <input
-                  type="date"
-                  required
-                  value={contentForm.date}
-                  onChange={(e) => setContentForm({ ...contentForm, date: e.target.value })}
+                  type="url"
+                  value={contentForm.mediaUrl}
+                  onChange={(e) => setContentForm({ ...contentForm, mediaUrl: e.target.value })}
                   className="rd-input w-full rd-line rounded px-3 py-2 text-sm"
+                  placeholder="https://exmple.com/ma-video.mp4"
                 />
               </div>
 
@@ -289,7 +386,7 @@ export default function RundownDashboard() {
                   className="text-xs font-medium px-4 py-2 rounded"
                   style={{ background: '#1C2430', color: '#F0F1EC' }}
                 >
-                  Enregistrer
+                  Programmer
                 </button>
               </div>
             </form>

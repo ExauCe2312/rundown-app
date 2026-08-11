@@ -1,50 +1,44 @@
 import React, { useState } from 'react';
+import { supabase } from './supabaseClient'; // On importe notre connexion au serveur
 import './rundown.css';
 
 // ---------------------------------------------------------------------------
-// Couche "authService" avec localStorage natif
+// Couche "authService" connectée à Supabase
 // ---------------------------------------------------------------------------
 
-async function hashPassword(password) {
-  const enc = new TextEncoder().encode(password);
-  const buf = await crypto.subtle.digest('SHA-256', enc);
-  return Array.from(new Uint8Array(buf))
-    .map((b) => b.toString(16).padStart(2, '0'))
-    .join('');
-}
+const authService = {
+  signUp: async ({ name, email, password }) => {
+    // Appel direct à la base de données pour créer le compte
+    const { data, error } = await supabase.auth.signUp({
+      email: email,
+      password: password,
+      options: {
+        data: { name: name } // On sauvegarde le nom dans les métadonnées de l'utilisateur
+      }
+    });
 
-async function signUp({ name, email, password }) {
-  const key = `users:${email.toLowerCase()}`;
-  
-  const existing = localStorage.getItem(key);
-  if (existing) {
-    throw new Error('Un compte existe déjà avec cet e-mail.');
-  }
-  
-  const passwordHash = await hashPassword(password);
-  localStorage.setItem(key, JSON.stringify({ name, email, passwordHash }));
-  return { name, email };
-}
+    if (error) throw new Error(error.message);
+    return { name: data.user.user_metadata.name, email: data.user.email };
+  },
 
-async function signIn({ email, password }) {
-  const key = `users:${email.toLowerCase()}`;
-  const record = localStorage.getItem(key);
-  
-  if (!record) {
-    throw new Error('Aucun compte associé à cet e-mail.');
-  }
-  
-  const data = JSON.parse(record);
-  const passwordHash = await hashPassword(password);
-  
-  if (passwordHash !== data.passwordHash) {
-    throw new Error('Mot de passe incorrect.');
-  }
-  
-  return { name: data.name, email: data.email };
-}
+  signIn: async ({ email, password }) => {
+    // Appel direct à la base de données pour vérifier les identifiants
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: email,
+      password: password
+    });
 
-const authService = { signUp, signIn };
+    if (error) {
+      if (error.message === "Invalid login credentials") {
+        throw new Error('E-mail ou mot de passe incorrect.');
+      }
+      throw new Error(error.message);
+    }
+    
+    const name = data.user.user_metadata?.name || data.user.email;
+    return { name, email: data.user.email };
+  }
+};
 
 function validateEmail(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);

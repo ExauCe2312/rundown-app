@@ -6,7 +6,17 @@ import './rundown.css';
 export default function RundownDashboard() {
   const [user, setUser] = useState(null);
   const [activeTab, setActiveTab] = useState('bureau');
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false); // État pour ouvrir/fermer le menu sur mobile
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  
+  // États pour la modale de création de contenu
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [contentForm, setContentForm] = useState({
+    title: '',
+    platform: 'YouTube',
+    date: '',
+    status: 'Planifié'
+  });
+  
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -18,6 +28,14 @@ export default function RundownDashboard() {
   const handleLogout = async () => {
     await supabase.auth.signOut();
     navigate('/login');
+  };
+
+  const handleContentSubmit = (e) => {
+    e.preventDefault();
+    // Pour l'instant, on simule l'enregistrement avec une alerte propre et la fermeture de la modale
+    alert(`Contenu "${contentForm.title}" (${contentForm.platform}) planifié avec succès pour le ${contentForm.date || 'bientôt'} !`);
+    setIsModalOpen(false);
+    setContentForm({ title: '', platform: 'YouTube', date: '', status: 'Planifié' });
   };
 
   const renderContent = () => {
@@ -33,7 +51,7 @@ export default function RundownDashboard() {
                 </h1>
               </div>
               <button 
-                onClick={() => alert("Fonctionnalité '+ Nouveau contenu' à venir !")}
+                onClick={() => setIsModalOpen(true)}
                 className="text-sm font-medium px-4 py-2 rounded flex items-center gap-2 w-full sm:w-auto justify-center"
                 style={{ background: '#1C2430', color: '#F0F1EC' }}
               >
@@ -65,7 +83,6 @@ export default function RundownDashboard() {
               </div>
             </div>
 
-            {/* Section Calendrier et Stats Globales d'origine réintégrées */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="lg:col-span-2 bg-white p-6 rd-line rounded">
                 <h3 className="rd-display text-lg font-semibold mb-2" style={{ color: '#1C2430' }}>Calendrier de publication</h3>
@@ -143,9 +160,9 @@ export default function RundownDashboard() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row" style={{ background: '#F0F1EC' }}>
+    <div className="min-h-screen flex flex-col lg:flex-row relative" style={{ background: '#F0F1EC' }}>
       
-      {/* Barre de navigation mobile (Visible uniquement sur petits écrans) */}
+      {/* Barre de navigation mobile */}
       <div className="lg:hidden flex justify-between items-center p-4 bg-[#1C2430] text-[#F0F1EC]">
         <span className="rd-display text-lg font-semibold">Rundown</span>
         <button 
@@ -156,7 +173,7 @@ export default function RundownDashboard() {
         </button>
       </div>
 
-      {/* Barre latérale (Sidebar) - Adaptative mobile/desktop */}
+      {/* Barre latérale (Sidebar) */}
       <aside 
         className={`w-full lg:w-64 flex-shrink-0 flex-col justify-between p-6 bg-[#1C2430] text-[#F0F1EC] ${
           isMobileMenuOpen ? 'flex' : 'hidden lg:flex'
@@ -180,7 +197,7 @@ export default function RundownDashboard() {
                 key={item.id}
                 onClick={() => {
                   setActiveTab(item.id);
-                  setIsMobileMenuOpen(false); // Ferme le menu mobile automatiquement au clic
+                  setIsMobileMenuOpen(false);
                 }}
                 className="text-left px-3 py-2 rounded text-sm transition-colors"
                 style={{
@@ -204,6 +221,82 @@ export default function RundownDashboard() {
       <main className="flex-1 p-4 lg:p-8 overflow-y-auto">
         {renderContent()}
       </main>
+
+      {/* Fenêtre Modale "Nouveau contenu" */}
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md shadow-xl rd-line">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="rd-display text-lg font-semibold" style={{ color: '#1C2430' }}>Planifier un nouveau contenu</h3>
+              <button 
+                onClick={() => setIsModalOpen(false)}
+                className="text-sm font-bold px-2 py-1 rounded hover:bg-gray-100"
+                style={{ color: '#5B6472' }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleContentSubmit}>
+              <div className="mb-4">
+                <label className="text-xs font-medium block mb-1.5" style={{ color: '#1C2430' }}>Titre ou sujet de la publication</label>
+                <input
+                  type="text"
+                  required
+                  value={contentForm.title}
+                  onChange={(e) => setContentForm({ ...contentForm, title: e.target.value })}
+                  className="rd-input w-full rd-line rounded px-3 py-2 text-sm"
+                  placeholder="Ex: Refonte de mon setup dev..."
+                />
+              </div>
+
+              <div className="mb-4">
+                <label className="text-xs font-medium block mb-1.5" style={{ color: '#1C2430' }}>Plateforme cible</label>
+                <select
+                  value={contentForm.platform}
+                  onChange={(e) => setContentForm({ ...contentForm, platform: e.target.value })}
+                  className="rd-input w-full rd-line rounded px-3 py-2 text-sm bg-white"
+                >
+                  <option value="YouTube">YouTube</option>
+                  <option value="Instagram">Instagram</option>
+                  <option value="TikTok">TikTok</option>
+                  <option value="Newsletter">Newsletter</option>
+                </select>
+              </div>
+
+              <div className="mb-6">
+                <label className="text-xs font-medium block mb-1.5" style={{ color: '#1C2430' }}>Date de publication prévue</label>
+                <input
+                  type="date"
+                  required
+                  value={contentForm.date}
+                  onChange={(e) => setContentForm({ ...contentForm, date: e.target.value })}
+                  className="rd-input w-full rd-line rounded px-3 py-2 text-sm"
+                />
+              </div>
+
+              <div className="flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsModalOpen(false)}
+                  className="text-xs font-medium px-4 py-2 rounded rd-line bg-gray-50 hover:bg-gray-100"
+                  style={{ color: '#5B6472' }}
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  className="text-xs font-medium px-4 py-2 rounded"
+                  style={{ background: '#1C2430', color: '#F0F1EC' }}
+                >
+                  Enregistrer
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

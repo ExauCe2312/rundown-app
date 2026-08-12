@@ -1,59 +1,17 @@
 import React, { useState } from 'react';
-import { supabase } from './supabaseClient'; // On importe notre connexion au serveur
+import { useAuth } from './AuthContext';
 import './rundown.css';
-
-// ---------------------------------------------------------------------------
-// Couche "authService" connectée à Supabase
-// ---------------------------------------------------------------------------
-
-const authService = {
-  signUp: async ({ name, email, password }) => {
-    // Appel direct à la base de données pour créer le compte
-    const { data, error } = await supabase.auth.signUp({
-      email: email,
-      password: password,
-      options: {
-        data: { name: name } // On sauvegarde le nom dans les métadonnées de l'utilisateur
-      }
-    });
-
-    if (error) throw new Error(error.message);
-    return { name: data.user.user_metadata.name, email: data.user.email };
-  },
-
-  signIn: async ({ email, password }) => {
-    // Appel direct à la base de données pour vérifier les identifiants
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email: email,
-      password: password
-    });
-
-    if (error) {
-      if (error.message === "Invalid login credentials") {
-        throw new Error('E-mail ou mot de passe incorrect.');
-      }
-      throw new Error(error.message);
-    }
-    
-    const name = data.user.user_metadata?.name || data.user.email;
-    return { name, email: data.user.email };
-  }
-};
 
 function validateEmail(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
-// ---------------------------------------------------------------------------
-// Composant Principal
-// ---------------------------------------------------------------------------
-
-export default function RundownAuth({ onLogin }) {
+export default function RundownAuth() {
+  const { login, signup } = useAuth();
   const [mode, setMode] = useState('login');
   const [form, setForm] = useState({ name: '', email: '', password: '', confirm: '' });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(null);
 
   const update = (field) => (e) => setForm((f) => ({ ...f, [field]: e.target.value }));
 
@@ -70,7 +28,6 @@ export default function RundownAuth({ onLogin }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setSuccess(null);
     const errs = validate();
     setErrors(errs);
     if (Object.keys(errs).length > 0) return;
@@ -78,18 +35,12 @@ export default function RundownAuth({ onLogin }) {
     setLoading(true);
     try {
       if (mode === 'signup') {
-        const user = await authService.signUp(form);
-        setSuccess(`Compte créé — bienvenue ${user.name} !`);
+        await signup(form.name, form.email, form.password);
       } else {
-        const user = await authService.signIn(form);
-        setSuccess(`Connexion réussie — bienvenue ${user.name || user.email} !`);
+        await login(form.email, form.password);
       }
-      setForm({ name: '', email: '', password: '', confirm: '' });
-      
-      if (onLogin) {
-        setTimeout(onLogin, 1000); 
-      }
-      
+      // Pas de redirection manuelle ici : AuthContext détecte la nouvelle
+      // session et App.jsx bascule automatiquement vers /dashboard.
     } catch (err) {
       setErrors({ form: err.message || 'Une erreur est survenue. Réessayez.' });
     } finally {
@@ -100,7 +51,6 @@ export default function RundownAuth({ onLogin }) {
   const switchMode = (m) => {
     setMode(m);
     setErrors({});
-    setSuccess(null);
     setForm({ name: '', email: '', password: '', confirm: '' });
   };
 
@@ -119,11 +69,6 @@ export default function RundownAuth({ onLogin }) {
             {mode === 'login' ? 'Connectez-vous pour retrouver votre rundown.' : 'Commencez à publier plus, en gérant moins.'}
           </p>
 
-          {success && (
-            <div className="rd-mono text-xs mb-5 px-3 py-2 rounded" style={{ background: 'rgba(63,125,92,0.1)', color: '#3F7D5C' }}>
-              {success}
-            </div>
-          )}
           {errors.form && (
             <div className="rd-mono text-xs mb-5 px-3 py-2 rounded" style={{ background: 'rgba(181,69,47,0.08)', color: '#B5452F' }}>
               {errors.form}

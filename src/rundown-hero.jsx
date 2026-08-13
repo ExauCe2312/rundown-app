@@ -1,7 +1,12 @@
 import React from 'react';
 import { ArrowRight } from 'lucide-react';
-import { Link } from 'react-router-dom';
-import './rundown.css';
+
+const STYLES = `
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600;700&family=Libre+Franklin:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+.rd-display { font-family: 'Fraunces', serif; }
+.rd-mono { font-family: 'IBM Plex Mono', monospace; font-variant-numeric: tabular-nums; }
+`;
 
 const PLATEFORMES = {
   youtube: { code: 'YT', couleur: '#E14434' },
@@ -13,6 +18,7 @@ const PLATEFORMES = {
 export default function RundownHero() {
   return (
     <section className="min-h-screen flex items-center" style={{ background: '#1C2430' }}>
+      <style>{STYLES}</style>
       <div className="max-w-3xl mx-auto px-6 py-20 text-center">
         <div
           className="inline-flex items-center gap-2 rd-mono text-xs uppercase tracking-widest mb-6 px-3 py-1 rounded-full"
@@ -33,13 +39,12 @@ export default function RundownHero() {
         </p>
 
         <div className="flex items-center justify-center gap-4 flex-wrap mb-14">
-          <Link
-            to="/login"
+          <button
             className="flex items-center gap-2 text-sm font-medium px-6 py-3 rounded"
             style={{ background: '#F0F1EC', color: '#1C2430' }}
           >
             Commencer gratuitement <ArrowRight size={16} />
-          </Link>
+          </button>
           <button className="text-sm font-medium underline underline-offset-4" style={{ color: '#B7BEC8' }}>
             Voir la démo
           </button>

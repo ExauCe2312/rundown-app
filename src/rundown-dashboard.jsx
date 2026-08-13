@@ -40,6 +40,14 @@ export default function RundownDashboard() {
     status: 'Planifié'
   });
 
+  const [nameForm, setNameForm] = useState(user?.user_metadata?.name || '');
+  const [nameSaving, setNameSaving] = useState(false);
+  const [nameMessage, setNameMessage] = useState(null);
+
+  const [passwordForm, setPasswordForm] = useState({ password: '', confirm: '' });
+  const [passwordSaving, setPasswordSaving] = useState(false);
+  const [passwordMessage, setPasswordMessage] = useState(null);
+
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -115,6 +123,45 @@ export default function RundownDashboard() {
     if (error) {
       setContents(previous);
       setContentsError('Impossible de supprimer ce contenu. Réessayez.');
+    }
+  };
+
+  const handleNameSubmit = async (e) => {
+    e.preventDefault();
+    setNameMessage(null);
+    if (!nameForm.trim()) {
+      setNameMessage({ type: 'error', text: 'Le nom ne peut pas être vide.' });
+      return;
+    }
+    setNameSaving(true);
+    const { error } = await supabase.auth.updateUser({ data: { name: nameForm.trim() } });
+    setNameSaving(false);
+    if (error) {
+      setNameMessage({ type: 'error', text: 'Impossible de mettre à jour le nom. Réessayez.' });
+    } else {
+      setNameMessage({ type: 'success', text: 'Nom mis à jour.' });
+    }
+  };
+
+  const handlePasswordSubmit = async (e) => {
+    e.preventDefault();
+    setPasswordMessage(null);
+    if (passwordForm.password.length < 8) {
+      setPasswordMessage({ type: 'error', text: '8 caractères minimum.' });
+      return;
+    }
+    if (passwordForm.password !== passwordForm.confirm) {
+      setPasswordMessage({ type: 'error', text: 'Les mots de passe ne correspondent pas.' });
+      return;
+    }
+    setPasswordSaving(true);
+    const { error } = await supabase.auth.updateUser({ password: passwordForm.password });
+    setPasswordSaving(false);
+    if (error) {
+      setPasswordMessage({ type: 'error', text: 'Impossible de changer le mot de passe. Réessayez.' });
+    } else {
+      setPasswordMessage({ type: 'success', text: 'Mot de passe mis à jour.' });
+      setPasswordForm({ password: '', confirm: '' });
     }
   };
 
@@ -362,10 +409,87 @@ export default function RundownDashboard() {
         return (
           <div>
             <h1 className="rd-display text-2xl font-semibold mb-4" style={{ color: '#1C2430' }}>Paramètres du compte</h1>
-            <p className="text-sm mb-4" style={{ color: '#5B6472' }}>Gérez vos informations de profil et vos préférences de connexion.</p>
-            <div className="p-4 bg-white rd-line rounded max-w-md">
-              <p className="text-xs font-medium mb-1" style={{ color: '#5B6472' }}>E-mail connecté :</p>
-              <p className="text-sm font-bold mb-4" style={{ color: '#1C2430' }}>{user?.email}</p>
+            <p className="text-sm mb-6" style={{ color: '#5B6472' }}>Gérez vos informations de profil et vos préférences de connexion.</p>
+
+            <div className="space-y-6 max-w-md">
+              <div className="p-4 bg-white rd-line rounded">
+                <p className="text-xs font-medium mb-1" style={{ color: '#5B6472' }}>E-mail connecté</p>
+                <p className="text-sm font-bold" style={{ color: '#1C2430' }}>{user?.email}</p>
+              </div>
+
+              <div className="p-4 bg-white rd-line rounded">
+                <p className="text-xs font-medium mb-3" style={{ color: '#5B6472' }}>Nom affiché</p>
+                {nameMessage && (
+                  <div
+                    className="rd-mono text-xs mb-3 px-3 py-2 rounded"
+                    style={
+                      nameMessage.type === 'error'
+                        ? { background: 'rgba(181,69,47,0.08)', color: '#B5452F' }
+                        : { background: 'rgba(63,125,92,0.1)', color: '#3F7D5C' }
+                    }
+                  >
+                    {nameMessage.text}
+                  </div>
+                )}
+                <form onSubmit={handleNameSubmit} className="flex gap-2">
+                  <input
+                    type="text"
+                    value={nameForm}
+                    onChange={(e) => setNameForm(e.target.value)}
+                    className="rd-input flex-1 rd-line rounded px-3 py-2 text-sm"
+                    placeholder="Votre nom"
+                  />
+                  <button
+                    type="submit"
+                    disabled={nameSaving}
+                    className="text-xs font-medium px-4 py-2 rounded"
+                    style={{ background: '#1C2430', color: '#F0F1EC', opacity: nameSaving ? 0.6 : 1 }}
+                  >
+                    {nameSaving ? '...' : 'Enregistrer'}
+                  </button>
+                </form>
+              </div>
+
+              <div className="p-4 bg-white rd-line rounded">
+                <p className="text-xs font-medium mb-3" style={{ color: '#5B6472' }}>Changer le mot de passe</p>
+                {passwordMessage && (
+                  <div
+                    className="rd-mono text-xs mb-3 px-3 py-2 rounded"
+                    style={
+                      passwordMessage.type === 'error'
+                        ? { background: 'rgba(181,69,47,0.08)', color: '#B5452F' }
+                        : { background: 'rgba(63,125,92,0.1)', color: '#3F7D5C' }
+                    }
+                  >
+                    {passwordMessage.text}
+                  </div>
+                )}
+                <form onSubmit={handlePasswordSubmit} className="space-y-3">
+                  <input
+                    type="password"
+                    value={passwordForm.password}
+                    onChange={(e) => setPasswordForm({ ...passwordForm, password: e.target.value })}
+                    className="rd-input w-full rd-line rounded px-3 py-2 text-sm"
+                    placeholder="Nouveau mot de passe"
+                  />
+                  <input
+                    type="password"
+                    value={passwordForm.confirm}
+                    onChange={(e) => setPasswordForm({ ...passwordForm, confirm: e.target.value })}
+                    className="rd-input w-full rd-line rounded px-3 py-2 text-sm"
+                    placeholder="Confirmer le mot de passe"
+                  />
+                  <button
+                    type="submit"
+                    disabled={passwordSaving}
+                    className="text-xs font-medium px-4 py-2 rounded w-full"
+                    style={{ background: '#1C2430', color: '#F0F1EC', opacity: passwordSaving ? 0.6 : 1 }}
+                  >
+                    {passwordSaving ? 'Enregistrement...' : 'Changer le mot de passe'}
+                  </button>
+                </form>
+              </div>
+
               <button 
                 onClick={handleLogout}
                 className="text-xs font-medium px-3 py-2 rounded rd-line"

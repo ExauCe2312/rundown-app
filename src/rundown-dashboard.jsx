@@ -1,8 +1,22 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { useAuth } from './AuthContext';
 import { supabase } from './supabaseClient';
 import './rundown.css';
+
+const PLATFORM_COLORS = {
+  'YouTube': '#E14434',
+  'Instagram': '#C43D6B',
+  'TikTok': '#1E8F86',
+  'Newsletter': '#A66A0E',
+  'LinkedIn': '#2E74B5',
+  'Facebook': '#38507A',
+  'X / Twitter': '#44403C',
+  'Threads': '#5B4B8A',
+};
+
+const MONTH_NAMES = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'];
 
 export default function RundownDashboard() {
   const { user, logout } = useAuth();
@@ -28,7 +42,6 @@ export default function RundownDashboard() {
 
   const navigate = useNavigate();
 
-  // Chargement des contenus depuis Supabase au montage du tableau de bord
   useEffect(() => {
     if (!user) return;
     let active = true;
@@ -95,12 +108,12 @@ export default function RundownDashboard() {
   const handleDeleteContent = async (id) => {
     const previous = contents;
     setContentsError(null);
-    setContents((prev) => prev.filter((item) => item.id !== id)); // suppression immédiate à l'écran
+    setContents((prev) => prev.filter((item) => item.id !== id));
 
     const { error } = await supabase.from('contents').delete().eq('id', id);
 
     if (error) {
-      setContents(previous); // on annule si la suppression a échoué côté serveur
+      setContents(previous);
       setContentsError('Impossible de supprimer ce contenu. Réessayez.');
     }
   };
@@ -132,7 +145,6 @@ export default function RundownDashboard() {
               </div>
             )}
 
-            {/* Statistiques rapides */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
               <div className="rd-line rounded p-4 bg-white">
                 <span className="rd-mono text-xs" style={{ color: '#5B6472' }}>VUES TOTALES</span>
@@ -156,7 +168,6 @@ export default function RundownDashboard() {
               </div>
             </div>
 
-            {/* Aperçu rapide des derniers contenus programmés */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="lg:col-span-2 bg-white p-6 rd-line rounded">
                 <h3 className="rd-display text-lg font-semibold mb-2" style={{ color: '#1C2430' }}>Prochaines publications</h3>
@@ -265,16 +276,87 @@ export default function RundownDashboard() {
           </div>
         );
 
-      case 'statistiques':
+      case 'statistiques': {
+        const platformCounts = contents.reduce((acc, item) => {
+          acc[item.platform] = (acc[item.platform] || 0) + 1;
+          return acc;
+        }, {});
+        const total = contents.length;
+        const platformBreakdown = Object.entries(platformCounts)
+          .map(([platform, count]) => ({
+            platform,
+            count,
+            pct: total ? Math.round((count / total) * 100) : 0,
+          }))
+          .sort((a, b) => b.count - a.count);
+
+        const monthlyMap = {};
+        contents.forEach((item) => {
+          const d = new Date(item.date);
+          const key = `${d.getFullYear()}-${d.getMonth()}`;
+          if (!monthlyMap[key]) {
+            monthlyMap[key] = {
+              mois: `${MONTH_NAMES[d.getMonth()]} ${d.getFullYear()}`,
+              contenus: 0,
+              sort: d.getFullYear() * 12 + d.getMonth(),
+            };
+          }
+          monthlyMap[key].contenus += 1;
+        });
+        const monthlyData = Object.values(monthlyMap).sort((a, b) => a.sort - b.sort);
+
         return (
           <div>
-            <h1 className="rd-display text-2xl font-semibold mb-4" style={{ color: '#1C2430' }}>Statistiques Globales</h1>
-            <p className="text-sm" style={{ color: '#5B6472' }}>Analysez la croissance de votre audience en détail.</p>
-            <div className="mt-6 p-8 bg-white rd-line rounded text-center text-sm" style={{ color: '#5B6472' }}>
-              Graphiques d'analytique avancés en cours de conception.
-            </div>
+            <h1 className="rd-display text-2xl font-semibold mb-1" style={{ color: '#1C2430' }}>Statistiques Globales</h1>
+            <p className="text-sm mb-6" style={{ color: '#5B6472' }}>
+              Basées sur vos contenus planifiés. Les vues et l'engagement s'ajouteront une fois vos comptes de
+              plateformes connectés.
+            </p>
+
+            {total === 0 ? (
+              <div className="p-8 bg-white rd-line rounded text-center text-sm" style={{ color: '#5B6472' }}>
+                Ajoutez des contenus pour voir apparaître vos statistiques ici.
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="bg-white p-6 rd-line rounded">
+                  <h3 className="rd-display text-lg font-semibold mb-4" style={{ color: '#1C2430' }}>Répartition par plateforme</h3>
+                  <div className="space-y-3">
+                    {platformBreakdown.map((p) => (
+                      <div key={p.platform}>
+                        <div className="flex items-center justify-between text-xs mb-1">
+                          <span style={{ color: '#1C2430' }}>{p.platform}</span>
+                          <span className="rd-mono" style={{ color: '#5B6472' }}>{p.count} · {p.pct}%</span>
+                        </div>
+                        <div className="w-full h-1.5 rounded-full bg-gray-100">
+                          <div
+                            className="h-1.5 rounded-full"
+                            style={{ width: `${p.pct}%`, background: PLATFORM_COLORS[p.platform] || '#8891A0' }}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="bg-white p-6 rd-line rounded">
+                  <h3 className="rd-display text-lg font-semibold mb-4" style={{ color: '#1C2430' }}>Contenus planifiés par mois</h3>
+                  <div style={{ height: 220 }}>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={monthlyData}>
+                        <XAxis dataKey="mois" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
+                        <YAxis allowDecimals={false} tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
+                        <Tooltip contentStyle={{ fontSize: 12, borderRadius: 6 }} />
+                        <Bar dataKey="contenus" fill="#1C2430" radius={[4, 4, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         );
+      }
 
       case 'parametres':
         return (
@@ -303,7 +385,6 @@ export default function RundownDashboard() {
   return (
     <div className="min-h-screen flex flex-col lg:flex-row relative" style={{ background: '#F0F1EC' }}>
       
-      {/* Barre de navigation mobile */}
       <div className="lg:hidden flex justify-between items-center p-4 bg-[#1C2430] text-[#F0F1EC]">
         <span className="rd-display text-lg font-semibold">Rundown</span>
         <button 
@@ -314,7 +395,6 @@ export default function RundownDashboard() {
         </button>
       </div>
 
-      {/* Barre latérale (Sidebar) */}
       <aside 
         className={`w-full lg:w-64 flex-shrink-0 flex-col justify-between p-6 bg-[#1C2430] text-[#F0F1EC] ${
           isMobileMenuOpen ? 'flex' : 'hidden lg:flex'
@@ -358,12 +438,10 @@ export default function RundownDashboard() {
         </div>
       </aside>
 
-      {/* Zone de contenu principale */}
       <main className="flex-1 p-4 lg:p-8 overflow-y-auto">
         {renderContent()}
       </main>
 
-      {/* Fenêtre Modale "Nouveau contenu" enrichie */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-md shadow-xl rd-line">

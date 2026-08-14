@@ -1,5 +1,6 @@
-import { createContext, useContext, useEffect, useState } from 'react';
-import { supabase } from './supabaseClient';
+/* eslint-disable react-refresh/only-export-components */
+import { createContext, useContext, useEffect, useState } from "react";
+import { supabase } from "./supabaseClient";
 
 const AuthContext = createContext(null);
 
@@ -34,8 +35,8 @@ export function AuthProvider({ children }) {
       options: { data: { name } },
     });
     if (error) {
-      if (error.message === 'User already registered') {
-        throw new Error('Un compte existe déjà avec cet e-mail.');
+      if (error.message === "User already registered") {
+        throw new Error("Un compte existe déjà avec cet e-mail.");
       }
       throw new Error(error.message);
     }
@@ -43,10 +44,13 @@ export function AuthProvider({ children }) {
   };
 
   const login = async (email, password) => {
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
     if (error) {
-      if (error.message === 'Invalid login credentials') {
-        throw new Error('E-mail ou mot de passe incorrect.');
+      if (error.message === "Invalid login credentials") {
+        throw new Error("E-mail ou mot de passe incorrect.");
       }
       throw new Error(error.message);
     }
@@ -67,6 +71,9 @@ export function AuthProvider({ children }) {
 // Petit raccourci utilisé dans les autres composants : const { user, login } = useAuth();
 export function useAuth() {
   const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error('useAuth() doit être utilisé à l’intérieur de <AuthProvider>.');
+  if (!ctx)
+    throw new Error(
+      "useAuth() doit être utilisé à l’intérieur de <AuthProvider>.",
+    );
   return ctx;
 }

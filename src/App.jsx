@@ -1,10 +1,10 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from './AuthContext';
-import ProtectedRoute from './ProtectedRoute';
-import RundownAuth from './rundown-auth';
-import RundownDashboard from './rundown-dashboard';
-import RundownHero from './rundown-hero';
-import RundownHomepageSections from './rundown-homepage-sections';
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { AuthProvider, useAuth } from "./AuthContext";
+import ProtectedRoute from "./ProtectedRoute";
+import RundownAuth from "./rundown-auth";
+import RundownDashboard from "./rundown-dashboard";
+import RundownHero from "./rundown-hero";
+import RundownHomepageSections from "./rundown-homepage-sections";
 
 function LandingPage() {
   return (
@@ -20,7 +20,10 @@ function LoginPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: '#F0F1EC', color: '#1C2430' }}>
+      <div
+        className="min-h-screen flex items-center justify-center"
+        style={{ background: "#F0F1EC", color: "#1C2430" }}
+      >
         <span className="rd-mono text-sm">Vérification de la session...</span>
       </div>
     );

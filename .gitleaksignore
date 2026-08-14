@@ -1,0 +1,9 @@
+# Gitleaks ignore file
+# Exclude patterns from secret scanning
+
+[allowlist]
+paths:
+  - .env.example  # Template file with placeholder values
+  - .*\.test\.jsx?  # Test files with mock data
+  - .*\.spec\.jsx?  # Spec files with mock data
+description = "Exclude example/template and test files"
